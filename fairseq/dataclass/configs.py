@@ -737,14 +737,20 @@ class FairseqBMUFConfig(FairseqDataclass):
     distributed_world_size: int = II("distributed_training.distributed_world_size")
 
 
+
 @dataclass
 class GenerationConfig(FairseqDataclass):
+    input_file: Optional[str] = field(
+        default="/tmp/foo.txt", metadata={"help": "input file containing string sequence to score"},
+    )
+    
     beam: int = field(
         default=5, metadata={"help": "beam size"},
     )
     nbest: int = field(
         default=1, metadata={"help": "number of hypotheses to output"},
     )
+
     max_len_a: float = field(
         default=0,
         metadata={
@@ -920,6 +926,16 @@ class CommonEvalConfig(FairseqDataclass):
     path: Optional[str] = field(
         default=None, metadata={"help": "path(s) to model file(s), colon separated"},
     )
+
+    vocab_file: Optional[str] = field(
+         default="/tmp/vocab.txt", metadata={"help": "tokenizer vocab file"}
+    )
+
+    merge_file: Optional[str] = field(
+        default="/tmp/merges.txt", metadata={"help": "tokenizer merge file"}
+    )
+
+    
     post_process: Optional[str] = field(
         default=None,
         metadata={

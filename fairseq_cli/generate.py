@@ -13,6 +13,7 @@ import math
 import os
 import sys
 from argparse import Namespace
+from tokenizers import ByteLevelBPETokenizer
 from itertools import chain
 
 import numpy as np
@@ -249,25 +250,20 @@ def _main(cfg: DictConfig, output_file):
         '''
         gen_timer.start()
 
+        vocab_file = cfg.common_eval.vocab_file
+        merge_file = cfg.common_eval.merge_file
 
-        str_to_score = open("/tmp/seq1.txt").read()
-        str_to_score2 = open("/tmp/seq2.txt").read()
-
+        print("Initializing tokenizer with vocab_file: {} and merge file: {}".format(vocab_file, merge_file))
+        bpe = ByteLevelBPETokenizer(vocab_file, merge_file)
+ 
+        str_to_score = open(cfg.generation.input_file).read()
         seq_to_score = tgt_dict.encode_line(str_to_score)
-        seq_to_score2 = tgt_dict.encode_line(str_to_score2)
 
         print("SEQUENCE TO SCORE")
         print(seq_to_score)
         agg_score1 = task.score(generator, sample, seq_to_score)
 
-        print("-----------------------------------")
-        print("SEQUENCE TO SCORE2")
-        print(seq_to_score2)
-
-        agg_score2 = task.score(generator, sample, seq_to_score2)
-
-        print("AGG SCORE 1", agg_score1)
-        print("AGG SCORE 2", agg_score2)
+        print("AGG SCORE:", agg_score1)
         
         sys.exit(1)
 
