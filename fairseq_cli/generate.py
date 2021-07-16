@@ -189,6 +189,55 @@ def _main(cfg: DictConfig, output_file):
         if "net_input" not in sample:
             continue
 
+        '''
+        has_target = sample["target"] is not None
+        i = 0
+
+        # Remove padding
+        if "src_tokens" in sample["net_input"]:
+            src_tokens = utils.strip_pad(
+                sample["net_input"]["src_tokens"][i, :], tgt_dict.pad()
+            )
+        else:
+            src_tokens = None
+
+        print(src_tokens)
+
+        target_tokens = None
+        if has_target:
+            target_tokens = (
+                utils.strip_pad(sample["target"][i, :], tgt_dict.pad()).int().cpu()
+            )
+
+        # Either retrieve the original sentences or regenerate them from tokens.
+        if align_dict is not None:
+            src_str = task.dataset(cfg.dataset.gen_subset).src.get_original_text(
+                sample_id
+            )
+            target_str = task.dataset(cfg.dataset.gen_subset).tgt.get_original_text(
+                sample_id
+            )
+        else:
+            if src_dict is not None:
+                src_str = src_dict.string(src_tokens, cfg.common_eval.post_process)
+            else:
+                src_str = ""
+            if has_target:
+                target_str = tgt_dict.string(
+                    target_tokens,
+                    cfg.common_eval.post_process,
+                    escape_unk=True,
+                    extra_symbols_to_ignore=get_symbols_to_strip_from_output(
+                        generator
+                    ),
+                )
+
+        src_str = decode_fn(src_str)
+        if has_target:
+                target_str = decode_fn(target_str)
+
+
+
         prefix_tokens = None
         if cfg.generation.prefix_size > 0:
             prefix_tokens = sample["target"][:, : cfg.generation.prefix_size]
@@ -197,7 +246,31 @@ def _main(cfg: DictConfig, output_file):
         if "constraints" in sample:
             constraints = sample["constraints"]
 
+        '''
         gen_timer.start()
+
+
+        str_to_score = open("/tmp/seq1.txt").read()
+        str_to_score2 = open("/tmp/seq2.txt").read()
+
+        seq_to_score = tgt_dict.encode_line(str_to_score)
+        seq_to_score2 = tgt_dict.encode_line(str_to_score2)
+
+        print("SEQUENCE TO SCORE")
+        print(seq_to_score)
+        agg_score1 = task.score(generator, sample, seq_to_score)
+
+        print("-----------------------------------")
+        print("SEQUENCE TO SCORE2")
+        print(seq_to_score2)
+
+        agg_score2 = task.score(generator, sample, seq_to_score2)
+
+        print("AGG SCORE 1", agg_score1)
+        print("AGG SCORE 2", agg_score2)
+        
+        sys.exit(1)
+
         hypos = task.inference_step(
             generator,
             models,
@@ -205,6 +278,8 @@ def _main(cfg: DictConfig, output_file):
             prefix_tokens=prefix_tokens,
             constraints=constraints,
         )
+        #print("hypos")
+        #print(hypos)
         num_generated_tokens = sum(len(h[0]["tokens"]) for h in hypos)
         gen_timer.stop(num_generated_tokens)
 

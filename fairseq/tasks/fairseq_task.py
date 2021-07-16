@@ -6,6 +6,7 @@
 import logging
 import os
 import warnings
+import numpy as np
 from argparse import Namespace
 from typing import Any, Callable, Dict, List
 
@@ -23,9 +24,8 @@ logger = logging.getLogger(__name__)
 
 class StatefulContainer(object):
 
-    def __init__(self):
-        self._state = dict()
-        self._factories = dict()
+    _state: Dict[str, Any] = dict()
+    _factories: Dict[str, Callable[[], Any]] = dict()
 
     def add_factory(self, name, factory: Callable[[], Any]):
         self._factories[name] = factory
@@ -78,6 +78,11 @@ class FairseqTask(object):
         Setting this to True will improves distributed training speed.
         """
         return criterion.logging_outputs_can_be_summed()
+
+    cfg: FairseqDataclass
+    datasets: Dict[str, FairseqDataset]
+    dataset_to_epoch_iter: Dict[FairseqDataset, Any]
+    state: StatefulContainer = None
 
     def __init__(self, cfg: FairseqDataclass, **kwargs):
         self.cfg = cfg
@@ -510,12 +515,75 @@ class FairseqTask(object):
     ) -> torch.utils.data.Dataset:
         raise NotImplementedError
 
+    def score(self, generator, sample, seq_to_score):
+        # bsz: total number of sentences in beam
+        # Note that src_tokens may have more than 2 dimensions (i.e. audio features)
+       
+        return generator.score(sample, seq_to_score)
+       
+        '''
+        beam_size = 1
+        max_len = 1024
+        pad = self.target_dictionary.pad()
+        unk = self.target_dictionary.unk()
+        eos = self.target_dictionary.eos()
+
+        net_input = sample["net_input"]
+        src_tokens = net_input["src_tokens"]
+        # length of the source text being the character length except EndOfSentence and pad
+        src_lengths = (
+            (src_tokens.ne(eos) & src_tokens.ne(pad)).long().sum(dim=1)
+        )
+
+        bsz, src_len = src_tokens.size()[:2]
+
+        cur_tokens =  (
+            torch.zeros(bsz * beam_size, max_len + 2)
+            .to(src_tokens)
+            .long()
+            .fill_(pad)
+        )  # +2 for eos and pad
+
+        cur_tokens[:, 0] = eos #if bos_token is None else bos_token
+
+        #encoder_outs = generator.encode(sample, bsz, src_tokens)
+
+        #for step in range(0, max_len + 1):
+            print()
+            lprobs = generator.score(cur_tokens, src_lengths, src_len, step, encoder_outs)
+
+            lprobs = np.exp(lprobs)
+            top_token = torch.topk(lprobs, 500)
+
+
+            for value, idx in zip(top_token.values[0][0:10], top_token.indices[0][0:10]):
+                print(idx, self.target_dictionary[idx], value)
+
+
+            if step >= len(seq_to_score): break
+            if seq_to_score[step] >= len(self.target_dictionary): continue
+            cur_score = lprobs[0][seq_to_score[step]]
+
+            try:
+                rank = top_token.indices[0].tolist().index(seq_to_score[step])
+            except ValueError:
+                rank = "not in top 500"
+
+            print("Score of {} token {}: {}, Rank: {}".format(self.target_dictionary[seq_to_score[step]], seq_to_score[step], cur_score, rank))
+
+            cur_tokens[0][step+1] = seq_to_score[step]
+            #cur_tokens[0][step+1] = 1039
+            
+        return lprobs
+        '''
+        
+
     def inference_step(
-        self, generator, models, sample, prefix_tokens=None, constraints=None
+        self, generator, models, sample, seq_to_score, prefix_tokens=None, constraints=None
     ):
         with torch.no_grad():
             return generator.generate(
-                models, sample, prefix_tokens=prefix_tokens, constraints=constraints
+                models, sample, seq_to_score, prefix_tokens=prefix_tokens, constraints=constraints
             )
 
     def begin_epoch(self, epoch, model):
@@ -618,7 +686,6 @@ class FairseqTask(object):
 
 class LegacyFairseqTask(FairseqTask):
     def __init__(self, args: Namespace):
-        super().__init__(None)
         self.args = args
         self.datasets = {}
         self.dataset_to_epoch_iter = {}
