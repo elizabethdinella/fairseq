@@ -1,0 +1,1 @@
+cd /home/edinella/methods2test/corpus/tokenized/ && fairseq-generate data-bin --path /home/edinella/model/checkpoint.pt --target-lang output.tests --source-lang input.methods && cd /home/edinella/fairseq
