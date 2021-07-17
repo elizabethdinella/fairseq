@@ -250,11 +250,11 @@ def _main(cfg: DictConfig, output_file):
         '''
         gen_timer.start()
 
-        vocab_file = cfg.common_eval.vocab_file
-        merge_file = cfg.common_eval.merge_file
+        #vocab_file = cfg.common_eval.vocab_file
+        #merge_file = cfg.common_eval.merge_file
 
-        print("Initializing tokenizer with vocab_file: {} and merge file: {}".format(vocab_file, merge_file))
-        bpe = ByteLevelBPETokenizer(vocab_file, merge_file)
+        #print("Initializing tokenizer with vocab_file: {} and merge file: {}".format(vocab_file, merge_file))
+        #bpe = ByteLevelBPETokenizer(vocab_file, merge_file)
  
         str_to_score = open(cfg.generation.input_file).read()
         seq_to_score = tgt_dict.encode_line(str_to_score)

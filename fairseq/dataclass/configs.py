@@ -740,10 +740,10 @@ class FairseqBMUFConfig(FairseqDataclass):
 
 @dataclass
 class GenerationConfig(FairseqDataclass):
-    input_file: Optional[str] = field(
-        default="/tmp/foo.txt", metadata={"help": "input file containing string sequence to score"},
+    input_file: str = field(
+            default="/tmp/foo.txt", metadata={"help": "input file containing string sequence to score"},
     )
-    
+        
     beam: int = field(
         default=5, metadata={"help": "beam size"},
     )
@@ -927,15 +927,7 @@ class CommonEvalConfig(FairseqDataclass):
         default=None, metadata={"help": "path(s) to model file(s), colon separated"},
     )
 
-    vocab_file: Optional[str] = field(
-         default="/tmp/vocab.txt", metadata={"help": "tokenizer vocab file"}
-    )
-
-    merge_file: Optional[str] = field(
-        default="/tmp/merges.txt", metadata={"help": "tokenizer merge file"}
-    )
-
-    
+        
     post_process: Optional[str] = field(
         default=None,
         metadata={
